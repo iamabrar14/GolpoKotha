@@ -3,9 +3,34 @@
   <div class="card">
     <h2>{{ user.username }}'s Profile</h2>
     
+    <div style="margin:15px 0; display:flex; gap:20px;">
+      <div>
+        <a href="{{ url_for('main.followers_list', username=user.username) }}" style="color:#4a9eff; text-decoration:none;">
+          <strong>{{ user.followers_count() }}</strong> Followers
+        </a>
+      </div>
+      <div>
+        <a href="{{ url_for('main.following_list', username=user.username) }}" style="color:#4a9eff; text-decoration:none;">
+          <strong>{{ user.following_count() }}</strong> Following
+        </a>
+      </div>
+    </div>
+    
     {% if user == current_user %}
       <div class="profile-actions">
         <a href="{{ url_for('main.edit_profile') }}" class="btn outline">Edit Profile</a>
+      </div>
+    {% elif current_user.is_authenticated %}
+      <div class="profile-actions">
+        {% if current_user.is_following(user) %}
+          <form action="{{ url_for('main.unfollow', username=user.username) }}" method="POST" style="display:inline;">
+            <button type="submit" class="btn outline">Unfollow</button>
+          </form>
+        {% else %}
+          <form action="{{ url_for('main.follow', username=user.username) }}" method="POST" style="display:inline;">
+            <button type="submit" class="btn">Follow</button>
+          </form>
+        {% endif %}
       </div>
     {% endif %}
     
