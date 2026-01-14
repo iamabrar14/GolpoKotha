@@ -264,22 +264,9 @@ def unfollow(username):
 @login_required
 def feed():
     page = request.args.get('page', 1, type=int)
-    followed_posts_query = current_user.followed_posts()
-    total = followed_posts_query.count()
-    posts_list = followed_posts_query.offset((page-1)*5).limit(5).all()
-    pages = (total + 5 - 1)//5
-    p = {
-        'items': posts_list,
-        'total': total,
-        'page': page,
-        'per_page': 5,
-        'pages': pages,
-        'has_prev': page > 1,
-        'has_next': page < pages,
-        'prev_num': page - 1 if page > 1 else None,
-        'next_num': page + 1 if page < pages else None
-    }
-    return render_template('feed.html', posts=posts_list, p=p)
+    q = current_user.followed_posts()
+    p = paginate(q, page, per_page=5)
+    return render_template('feed.html', posts=p['items'], p=p)
 
 @main.route('/profile/<username>/followers')
 def followers_list(username):
