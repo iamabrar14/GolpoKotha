@@ -211,7 +211,6 @@ def post_detail(post_id):
     comments = Comment.query.filter_by(post=post).order_by(Comment.date_commented.desc()).all()
     return render_template('post_detail.html', post=post, comments=comments)
 
-# Like post (user can only like once)
 @main.route('/post/<int:post_id>/like', methods=['POST'])
 @login_required
 def like_post(post_id):
@@ -230,3 +229,68 @@ def like_post(post_id):
         db.session.commit()
         flash('You liked this post!', 'success')
     return redirect(request.referrer or url_for('main.home'))
+
+@main.route('/follow/<username>', methods=['POST'])
+@login_required
+def follow(username):
+    user = User.query.filter(func.lower(User.username) == username.lower()).first()
+    if user is None:
+        flash(f'User {username} not found.', 'danger')
+        return redirect(url_for('main.home'))
+    if user == current_user:
+        flash('You cannot follow yourself!', 'warning')
+        return redirect(url_for('main.profile', username=username))
+    current_user.follow(user)
+    db.session.commit()
+    flash(f'You are now following {user.username}!', 'success')
+    return redirect(url_for('main.profile', username=username))
+
+@main.route('/unfollow/<username>', methods=['POST'])
+@login_required
+def unfollow(username):
+    user = User.query.filter(func.lower(User.username) == username.lower()).first()
+    if user is None:
+        flash(f'User {username} not found.', 'danger')
+        return redirect(url_for('main.home'))
+    if user == current_user:
+        flash('You cannot unfollow yourself!', 'warning')
+        return redirect(url_for('main.profile', username=username))
+    current_user.unfollow(user)
+    db.session.commit()
+    flash(f'You have unfollowed {user.username}.', 'info')
+    return redirect(url_for('main.profile', username=username))
+
+@main.route('/feed')
+@login_required
+def feed():
+    page = request.args.get('page', 1, type=int)
+    followed_posts_query = current_user.followed_posts()
+    total = followed_posts_query.count()
+    posts_list = followed_posts_query.offset((page-1)*5).limit(5).all()
+    pages = (total + 5 - 1)//5
+    p = {
+        'items': posts_list,
+        'total': total,
+        'page': page,
+        'per_page': 5,
+        'pages': pages,
+        'has_prev': page > 1,
+        'has_next': page < pages,
+        'prev_num': page - 1 if page > 1 else None,
+        'next_num': page + 1 if page < pages else None
+    }
+    return render_template('feed.html', posts=posts_list, p=p)
+
+@main.route('/profile/<username>/followers')
+def followers_list(username):
+    user = User.query.filter(func.lower(User.username) == username.lower()).first_or_404()
+    page = request.args.get('page', 1, type=int)
+    followers_pagination = user.followers.paginate(page=page, per_page=20, error_out=False)
+    return render_template('followers.html', user=user, users=followers_pagination.items, pagination=followers_pagination)
+
+@main.route('/profile/<username>/following')
+def following_list(username):
+    user = User.query.filter(func.lower(User.username) == username.lower()).first_or_404()
+    page = request.args.get('page', 1, type=int)
+    following_pagination = user.followed.paginate(page=page, per_page=20, error_out=False)
+    return render_template('following.html', user=user, users=following_pagination.items, pagination=following_pagination)
