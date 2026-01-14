@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block body %}
+  <div class="card">
+    <h2>{{ user.username }}'s Profile</h2>
+    
+    {% if user == current_user %}
+      <div class="profile-actions">
+        <a href="{{ url_for('main.edit_profile') }}" class="btn outline">Edit Profile</a>
+      </div>
+    {% endif %}
+    
+    <div class="profile-info">
+      <h3>About</h3>
+      {% if user.bio %}
+        <p>{{ user.bio }}</p>
+      {% else %}
+        <p class="muted">No bio provided yet.</p>
+      {% endif %}
+    </div>
+  </div>
+  
+  <h3 style="margin-top: 24px;">Posts by {{ user.username }}</h3>
+  {% for post in posts %}
+    <article class="card" style="margin:14px 0;">
+      <h3><a href="{{ url_for('main.post_detail', post_id=post.id) }}" style="color:#fff; text-decoration:none">{{ post.title }}</a></h3>
+      <div class="post-meta">{{ post.date_posted.strftime('%Y-%m-%d') }}</div>
+      <p>{{ post.content | truncate(220) }}</p>
+      <div class="post-actions">
+        <a class="btn outline" href="{{ url_for('main.post_detail', post_id=post.id) }}">Read</a>
+      </div>
+    </article>
+  {% else %}
+    <p>No posts found.</p>
+  {% endfor %}
+  
+  {% if p %}
+  <div class="pagination">
+    {% if p.has_prev %}
+      <a href="{{ request.path }}?page={{ p.prev_num }}">&laquo; Prev</a>
+    {% else %}
+      <span>Start</span>
+    {% endif %}
+    {% for num in range(1, p.pages + 1) %}
+      {% if num == p.page %}
+        <span class="active">{{ num }}</span>
+      {% else %}
+        <a href="{{ request.path }}?page={{ num }}">{{ num }}</a>
+      {% endif %}
+    {% endfor %}
+    {% if p.has_next %}
+      <a href="{{ request.path }}?page={{ p.next_num }}">Next &raquo;</a>
+    {% else %}
+      <span>End</span>
+    {% endif %}
+  </div>
+  {% endif %}
+{% endblock %}

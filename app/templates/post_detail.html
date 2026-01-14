@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block body %}
+  <article class="card">
+    <h3>{{ post.title }}</h3>
+    <div class="post-meta">
+      By <a href="{{ url_for('main.profile', username=post.author.username) }}" style="color:var(--muted)">
+        <strong>{{ post.author.username }}</strong>
+      </a>
+      · {{ post.date_posted.strftime('%B %d, %Y') }}
+      · 👍 Likes: {{ post.likes }}
+      · 👁️ Views: {{ post.views }}
+    </div>
+    <div class="post-actions">
+      <form action="{{ url_for('main.like_post', post_id=post.id) }}" method="post" style="display:inline;">
+        <button type="submit" class="btn outline">👍 Like ({{ post.likes }})</button>
+      </form>
+      {% if current_user.is_authenticated and current_user == post.author %}
+        <a class="btn muted" href="{{ url_for('main.edit_post', post_id=post.id) }}">Edit</a>
+        <form action="{{ url_for('main.delete_post', post_id=post.id) }}" method="post" onsubmit="return confirm('Delete this post? This action cannot be undone.');" style="display:inline;">
+          <button type="submit" class="btn danger">Delete</button>
+        </form>
+      {% endif %}
+    </div>
+    <hr style="border-color:rgba(255,255,255,.08)">
+    <div class="post-content">
+      <p>{{ post.content }}</p>
+    </div>
+  </article>
+
+  <div class="card" style="margin-top:16px;">
+    <h3>Comments ({{ comments|length }})</h3>
+    {% if current_user.is_authenticated %}
+      <form action="{{ url_for('main.post_detail', post_id=post.id) }}" method="post" style="margin-top:10px">
+        <textarea name="comment_content" rows="4" placeholder="Add a comment..." required></textarea>
+        <div style="margin-top:8px;"><button type="submit" class="btn">Post Comment</button></div>
+      </form>
+    {% else %}
+      <p><a href="{{ url_for('main.login', next=url_for('main.post_detail', post_id=post.id)) }}">Log in to comment.</a></p>
+    {% endif %}
+
+    {% for comment in comments %}
+      <div class="card" style="margin:10px 0; background:rgba(12,18,32,.6)">
+        <a href="{{ url_for('main.profile', username=comment.commenter.username) }}" style="text-decoration:none; color:var(--text)">
+          <strong>{{ comment.commenter.username }}</strong>
+        </a>
+        <span class="post-meta">· {{ comment.date_commented.strftime('%B %d, %Y') }}</span>
+        <p style="margin-top:8px">{{ comment.content }}</p>
+      </div>
+    {% endfor %}
+  </div>
+{% endblock %}

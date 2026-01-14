@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block body %}
+  <h2>Edit Post</h2>
+  <form action="{{ url_for('main.edit_post', post_id=post.id) }}" method="post" class="card">
+    <p><input type="text" name="title" value="{{ post.title }}" required></p>
+    <p><textarea name="content" rows="10" required>{{ post.content }}</textarea></p>
+    <div style="display:flex; gap:10px;">
+      <button type="submit" class="btn">Save Changes</button>
+      <a href="{{ url_for('main.post_detail', post_id=post.id) }}" class="btn outline">Cancel</a>
+    </div>
+  </form>
+{% endblock %}

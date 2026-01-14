@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block body %}
+  <h2>Create a New Blog Post</h2>
+
+  <form action="{{ url_for('main.new_post') }}" method="post" class="card">
+
+    <p>
+      <input type="text" name="title" placeholder="Post Title" required>
+    </p>
+
+    <p>
+      <textarea name="content" rows="10" placeholder="Write your story..." required></textarea>
+    </p>
+
+    <!-- ✅ NEW: Category Dropdown -->
+    <p>
+      <label><strong>Select Category</strong></label><br>
+      <select name="category" required>
+        <option value="Festival">Festival</option>
+        <option value="Romantic">Romantic</option>
+        <option value="Thriller">Thriller</option>
+        <option value="Horror">Horror</option>
+        <option value="Comedy">Comedy</option>
+        <option value="Others">Others</option>
+      </select>
+    </p>
+
+    <p>
+      <button type="submit" class="btn">Publish Post</button>
+    </p>
+
+  </form>
+{% endblock %}

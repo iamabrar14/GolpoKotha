@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block body %}
+  <h2>Edit Your Profile</h2>
+  <form action="{{ url_for('main.edit_profile') }}" method="post" class="card">
+    <p>
+      <label for="bio">Bio</label>
+      <textarea name="bio" id="bio" rows="5" placeholder="Tell us about yourself...">{{ current_user.bio }}</textarea>
+    </p>
+    <div style="display:flex; gap:10px;">
+      <button type="submit" class="btn">Save Changes</button>
+      <a href="{{ url_for('main.profile', username=current_user.username) }}" class="btn outline">Cancel</a>
+    </div>
+  </form>
+{% endblock %}

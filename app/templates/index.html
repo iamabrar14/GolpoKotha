@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block body %}
+
+<div class="welcome-banner">
+  <img src="{{ url_for('static', filename='img/blog_welcome.jpg') }}"
+       alt="Welcome to GolpoKotha Blog!">
+  <p>
+    Welcome to <span>GolpoKotha</span> – Share your stories, read, and connect!
+  </p>
+</div>
+
+<h2 class="section-title">Latest Blog Posts</h2>
+
+{% for post in posts %}
+<article class="card post-card">
+  <h3>
+    <a href="{{ url_for('main.post_detail', post_id=post.id) }}">
+      {{ post.title }}
+    </a>
+  </h3>
+
+  <div class="post-meta">
+    By <a href="{{ url_for('main.profile', username=post.author.username) }}">
+      {{ post.author.username }}
+    </a>
+    · {{ post.date_posted.strftime('%Y-%m-%d') }}
+    · 🏷️ Category: <strong>{{ post.category }}</strong>
+    · 👍 Likes: {{ post.likes }}
+    · 👁️ Views: {{ post.views }}
+  </div>
+
+  <p>{{ post.content | truncate(220) }}</p>
+
+  <div class="post-actions">
+    <form action="{{ url_for('main.like_post', post_id=post.id) }}" method="post" style="display:inline;">
+      <button type="submit" class="btn outline">👍 Like ({{ post.likes }})</button>
+    </form>
+
+    <a class="btn outline" href="{{ url_for('main.post_detail', post_id=post.id) }}">Read</a>
+
+    {% if current_user.is_authenticated and current_user == post.author %}
+      <a class="btn muted" href="{{ url_for('main.edit_post', post_id=post.id) }}">Edit</a>
+    {% endif %}
+  </div>
+</article>
+{% else %}
+<p>No posts found. Be the first to post!</p>
+{% endfor %}
+
+{% if p %}
+<div class="pagination">
+  {% if p.has_prev %}
+    <a href="{{ request.path }}?page={{ p.prev_num }}">&laquo; Prev</a>
+  {% else %}
+    <span>Start</span>
+  {% endif %}
+
+  {% for num in range(1, p.pages + 1) %}
+    {% if num == p.page %}
+      <span class="active">{{ num }}</span>
+    {% else %}
+      <a href="{{ request.path }}?page={{ num }}">{{ num }}</a>
+    {% endif %}
+  {% endfor %}
+
+  {% if p.has_next %}
+    <a href="{{ request.path }}?page={{ p.next_num }}">Next &raquo;</a>
+  {% else %}
+    <span>End</span>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}
