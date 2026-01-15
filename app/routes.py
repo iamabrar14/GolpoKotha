@@ -1,7 +1,7 @@
 from flask import render_template, url_for, flash, redirect, request, Blueprint, abort
 from flask_login import login_user, current_user, logout_user, login_required
 from . import db, bcrypt
-from .models import User, Post, Comment, Like
+from .models import User, Post, Comment, Like, Notification
 from sqlalchemy import func
 
 main = Blueprint('main', __name__)
@@ -143,6 +143,17 @@ def new_post():
         db.session.add(post)
         db.session.commit()
         flash('Post created!', 'success')
+        
+        # Notify all followers about the new post
+        followers = current_user.followers.all()
+        for follower in followers:
+            Notification.create_notification(
+                user_id=follower.id,
+                sender_id=current_user.id,
+                notification_type='new_post',
+                message=f'{current_user.username} published a new story "{title}"',
+                link=url_for('main.post_detail', post_id=post.id)
+            )
         return redirect(url_for('main.post_detail', post_id=post.id))
 
     return render_template('new_post.html')
@@ -206,6 +217,16 @@ def post_detail(post_id):
         db.session.add(comment)
         db.session.commit()
         flash('Your comment has been added.', 'success')
+        
+        # Create notification for post author (don't notify self)
+        if post.author.id != current_user.id:
+            Notification.create_notification(
+                user_id=post.author.id,
+                sender_id=current_user.id,
+                notification_type='comment',
+                message=f'{current_user.username} commented on your story "{post.title}"',
+                link=url_for('main.post_detail', post_id=post.id)
+            )
         return redirect(url_for('main.post_detail', post_id=post.id))
 
     comments = Comment.query.filter_by(post=post).order_by(Comment.date_commented.desc()).all()
@@ -228,6 +249,16 @@ def like_post(post_id):
         post.likes += 1
         db.session.commit()
         flash('You liked this post!', 'success')
+        
+        # Create notification for post author (don't notify self)
+        if post.author.id != current_user.id:
+            Notification.create_notification(
+                user_id=post.author.id,
+                sender_id=current_user.id,
+                notification_type='like',
+                message=f'{current_user.username} liked your story "{post.title}"',
+                link=url_for('main.post_detail', post_id=post.id)
+            )
     return redirect(request.referrer or url_for('main.home'))
 
 @main.route('/follow/<username>', methods=['POST'])
@@ -243,6 +274,15 @@ def follow(username):
     current_user.follow(user)
     db.session.commit()
     flash(f'You are now following {user.username}!', 'success')
+    
+    # Create notification for the followed user
+    Notification.create_notification(
+        user_id=user.id,
+        sender_id=current_user.id,
+        notification_type='follow',
+        message=f'{current_user.username} started following you',
+        link=url_for('main.profile', username=current_user.username)
+    )
     return redirect(url_for('main.profile', username=username))
 
 @main.route('/unfollow/<username>', methods=['POST'])
@@ -281,3 +321,49 @@ def following_list(username):
     page = request.args.get('page', 1, type=int)
     following_pagination = user.followed.paginate(page=page, per_page=20, error_out=False)
     return render_template('following.html', user=user, users=following_pagination.items, pagination=following_pagination)
+
+@main.route('/notifications')
+@login_required
+def notifications():
+    page = request.args.get('page', 1, type=int)
+    q = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc())
+    p = paginate(q, page, per_page=10)
+    return render_template('notifications.html', notifications=p['items'], p=p)
+
+@main.route('/notifications/mark-read', methods=['POST'])
+@login_required
+def mark_all_notifications_read():
+    current_user.mark_notifications_read()
+    flash('All notifications marked as read.', 'success')
+    return redirect(url_for('main.notifications'))
+
+@main.route('/notifications/mark-one-read/<int:notification_id>', methods=['POST'])
+@login_required
+def mark_one_notification_read(notification_id):
+    notification = Notification.query.get_or_404(notification_id)
+    if notification.user_id != current_user.id:
+        abort(403)
+    notification.is_read = True
+    db.session.commit()
+    if notification.link:
+        return redirect(notification.link)
+    return redirect(url_for('main.notifications'))
+
+@main.route('/notifications/delete/<int:notification_id>', methods=['POST'])
+@login_required
+def delete_notification(notification_id):
+    notification = Notification.query.get_or_404(notification_id)
+    if notification.user_id != current_user.id:
+        abort(403)
+    db.session.delete(notification)
+    db.session.commit()
+    flash('Notification deleted.', 'success')
+    return redirect(url_for('main.notifications'))
+
+@main.route('/notifications/clear-all', methods=['POST'])
+@login_required
+def clear_all_notifications():
+    Notification.query.filter_by(user_id=current_user.id).delete(synchronize_session=False)
+    db.session.commit()
+    flash('All notifications cleared.', 'success')
+    return redirect(url_for('main.notifications'))
