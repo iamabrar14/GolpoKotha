@@ -18,6 +18,7 @@
         <a href="{{ url_for('main.profile', username=current_user.username) }}">My Profile</a>
         <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
         <a href="{{ url_for('main.new_post') }}">Create Post</a>
+        <a href="{{ url_for('main.ai_assistant') }}">🤖 AI Assistant</a>
         <a href="{{ url_for('main.notifications') }}">
           🔔 Notifications
           {% set unread_count = current_user.unread_notifications_count() %}
