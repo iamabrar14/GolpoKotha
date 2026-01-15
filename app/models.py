@@ -25,7 +25,6 @@ class User(UserMixin, db.Model):
         backref=db.backref('followers', lazy='dynamic'),
         lazy='dynamic'
     )
-    
     notifications = db.relationship('Notification', foreign_keys='Notification.user_id', backref='recipient', cascade='all, delete-orphan', passive_deletes=True)
 
     def set_password(self, password):

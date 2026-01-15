@@ -363,7 +363,7 @@ def delete_notification(notification_id):
 @main.route('/notifications/clear-all', methods=['POST'])
 @login_required
 def clear_all_notifications():
-    Notification.query.filter_by(user_id=current_user.id).delete()
+    Notification.query.filter_by(user_id=current_user.id).delete(synchronize_session=False)
     db.session.commit()
     flash('All notifications cleared.', 'success')
     return redirect(url_for('main.notifications'))

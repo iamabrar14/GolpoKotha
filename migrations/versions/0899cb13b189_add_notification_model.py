@@ -25,7 +25,7 @@ def upgrade():
     sa.Column('notification_type', sa.String(length=20), nullable=False),
     sa.Column('message', sa.String(length=255), nullable=False),
     sa.Column('link', sa.String(length=255), nullable=True),
-    sa.Column('is_read', sa.Boolean(), nullable=False),
+    sa.Column('is_read', sa.Boolean(), nullable=False, server_default='0'),
     sa.Column('created_at', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['sender_id'], ['user.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ondelete='CASCADE'),
