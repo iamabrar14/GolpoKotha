@@ -18,6 +18,13 @@
         <a href="{{ url_for('main.profile', username=current_user.username) }}">My Profile</a>
         <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
         <a href="{{ url_for('main.new_post') }}">Create Post</a>
+        <a href="{{ url_for('main.notifications') }}">
+          🔔 Notifications
+          {% set unread_count = current_user.unread_notifications_count() %}
+          {% if unread_count > 0 %}
+            <span class="notification-badge">{{ unread_count }}</span>
+          {% endif %}
+        </a>
         <a href="{{ url_for('main.logout') }}">Logout</a>
       {% else %}
         <a href="{{ url_for('main.login') }}">Login</a>
