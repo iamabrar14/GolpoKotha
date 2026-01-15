@@ -10,10 +10,10 @@ followers = db.Table('followers',
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    # Case-insensitive unique usernames via SQLite NOCASE collation
+    
     username = db.Column(db.String(64), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
-    bio = db.Column(db.Text, nullable=True, default='')  # Added bio field
+    bio = db.Column(db.Text, nullable=True, default='')  
 
     posts = db.relationship('Post', backref='author', cascade='all, delete-orphan', passive_deletes=True)
     comments = db.relationship('Comment', backref='commenter', cascade='all, delete-orphan', passive_deletes=True)
