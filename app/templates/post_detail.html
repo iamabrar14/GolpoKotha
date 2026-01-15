@@ -1,51 +1,197 @@
 {% extends "base.html" %}
+{% block title %}{{ post.title }} - GolpoKotha{% endblock %}
+
 {% block body %}
-  <article class="card">
-    <h3>{{ post.title }}</h3>
+<article class="card post-detail">
+  <header class="post-header">
+    <h1>{{ post.title }}</h1>
     <div class="post-meta">
-      By <a href="{{ url_for('main.profile', username=post.author.username) }}" style="color:var(--muted)">
-        <strong>{{ post.author.username }}</strong>
-      </a>
-      · {{ post.date_posted.strftime('%B %d, %Y') }}
-      · 👍 Likes: {{ post.likes }}
-      · 👁️ Views: {{ post.views }}
+      <span>By <a href="{{ url_for('main.profile', username=post.author.username) }}">{{ post.author.username }}</a></span>
+      <span>· {{ post.date_posted.strftime('%B %d, %Y') }}</span>
+      <span>· 👍 Likes:  {{ post.likes or 0 }}</span>
+      <span>· 👁️ Views: {{ post.views or 0 }}</span>
     </div>
-    <div class="post-actions">
-      <form action="{{ url_for('main.like_post', post_id=post.id) }}" method="post" style="display:inline;">
-        <button type="submit" class="btn outline">👍 Like ({{ post.likes }})</button>
-      </form>
-      {% if current_user.is_authenticated and current_user == post.author %}
-        <a class="btn muted" href="{{ url_for('main.edit_post', post_id=post.id) }}">Edit</a>
-        <form action="{{ url_for('main.delete_post', post_id=post.id) }}" method="post" onsubmit="return confirm('Delete this post? This action cannot be undone.');" style="display:inline;">
-          <button type="submit" class="btn danger">Delete</button>
-        </form>
-      {% endif %}
-    </div>
-    <hr style="border-color:rgba(255,255,255,.08)">
-    <div class="post-content">
-      <p>{{ post.content }}</p>
-    </div>
-  </article>
-
-  <div class="card" style="margin-top:16px;">
-    <h3>Comments ({{ comments|length }})</h3>
+  </header>
+  
+  <div class="post-actions">
     {% if current_user.is_authenticated %}
-      <form action="{{ url_for('main.post_detail', post_id=post.id) }}" method="post" style="margin-top:10px">
-        <textarea name="comment_content" rows="4" placeholder="Add a comment..." required></textarea>
-        <div style="margin-top:8px;"><button type="submit" class="btn">Post Comment</button></div>
+      <form action="{{ url_for('main.like_post', post_id=post.id) }}" method="POST">
+        <button type="submit" class="btn">👍 Like ({{ post.likes or 0 }})</button>
       </form>
-    {% else %}
-      <p><a href="{{ url_for('main.login', next=url_for('main.post_detail', post_id=post.id)) }}">Log in to comment.</a></p>
     {% endif %}
+    
+    {% if current_user.is_authenticated and current_user == post.author %}
+      <a href="{{ url_for('main.edit_post', post_id=post.id) }}" class="btn outline">Edit</a>
+      <form action="{{ url_for('main.delete_post', post_id=post.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this story?');">
+        <button type="submit" class="btn btn-delete">Delete</button>
+      </form>
+    {% endif %}
+  </div>
+  
+  <div class="post-content">
+    {{ post.content | safe }}
+  </div>
+</article>
 
+<!-- Comments Section -->
+<div class="card" style="margin-top: 20px;">
+  <h3>Comments ({{ comments | length }})</h3>
+  
+  {% if current_user.is_authenticated %}
+  <form method="POST" action="{{ url_for('main.post_detail', post_id=post.id) }}" class="comment-form">
+    <div class="form-group">
+      <textarea name="comment_content" rows="3" placeholder="Add a comment... "></textarea>
+    </div>
+    <button type="submit" class="btn">Post Comment</button>
+  </form>
+  {% else %}
+  <p style="color:#999;">Please <a href="{{ url_for('main.login') }}" style="color:#4a9eff;">login</a> to comment. </p>
+  {% endif %}
+  
+  <div class="comments-list">
     {% for comment in comments %}
-      <div class="card" style="margin:10px 0; background:rgba(12,18,32,.6)">
-        <a href="{{ url_for('main.profile', username=comment.commenter.username) }}" style="text-decoration:none; color:var(--text)">
-          <strong>{{ comment.commenter.username }}</strong>
-        </a>
-        <span class="post-meta">· {{ comment.date_commented.strftime('%B %d, %Y') }}</span>
-        <p style="margin-top:8px">{{ comment.content }}</p>
+    <div class="comment">
+      <div class="comment-header">
+        <a href="{{ url_for('main.profile', username=comment.commenter.username) }}">{{ comment.commenter.username }}</a>
+        <span class="comment-date">{{ comment.date_commented.strftime('%Y-%m-%d %H:%M') }}</span>
       </div>
+      <p>{{ comment.content }}</p>
+    </div>
+    {% else %}
+    <p style="color:#999; margin-top: 15px;">No comments yet. Be the first to comment!</p>
     {% endfor %}
   </div>
-{% endblock %}
+</div>
+
+<style>
+  .post-detail h1 {
+    margin-bottom: 10px;
+    color: #fff;
+  }
+  . post-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    color: #999;
+    font-size: 0.9em;
+    margin-bottom: 20px;
+  }
+  .post-meta a {
+    color: #4a9eff;
+    text-decoration: none;
+  }
+  
+  .post-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap:  10px;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #444;
+  }
+  .post-actions form {
+    margin:  0;
+    padding: 0;
+    display: inline-flex;
+  }
+  . post-actions .btn {
+    padding: 10px 20px;
+    font-size: 14px;
+    border-radius:  6px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-delete {
+    background: #dc3545 !important;
+    border-color: #dc3545 !important;
+    color: #fff ! important;
+  }
+  . btn-delete:hover {
+    background: #c82333 ! important;
+  }
+  
+  .post-content {
+    line-height: 1.8;
+    color: #ddd;
+    font-size: 1.1em;
+    margin-top: 20px;
+  }
+  .post-content p {
+    margin-bottom: 15px;
+  }
+  .post-content h1, .post-content h2, . post-content h3 {
+    margin:  20px 0 10px 0;
+    color: #fff;
+  }
+  . post-content ul, .post-content ol {
+    margin-left: 20px;
+    margin-bottom: 15px;
+  }
+  .post-content blockquote {
+    border-left: 4px solid #4a9eff;
+    padding-left: 15px;
+    margin:  15px 0;
+    color: #aaa;
+    font-style: italic;
+  }
+  .post-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 15px 0;
+  }
+  .post-content a {
+    color: #4a9eff;
+  }
+  
+  .comment-form {
+    margin-bottom: 20px;
+  }
+  .comment-form textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #444;
+    border-radius:  6px;
+    background: #2a2a2a;
+    color: #fff;
+    resize:  vertical;
+    margin-bottom: 10px;
+  }
+  .comment-form textarea:focus {
+    outline:  none;
+    border-color:  #4a9eff;
+  }
+  
+  .comments-list {
+    margin-top: 20px;
+  }
+  .comment {
+    padding: 15px;
+    background: #2a2a2a;
+    border-radius: 8px;
+    margin-bottom:  10px;
+  }
+  .comment-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  . comment-header a {
+    color: #4a9eff;
+    font-weight: bold;
+    text-decoration: none;
+  }
+  .comment-date {
+    color: #888;
+    font-size: 0.9em;
+  }
+  . comment p {
+    margin: 0;
+    color: #ddd;
+  }
+</style>
+{% endblock %}  

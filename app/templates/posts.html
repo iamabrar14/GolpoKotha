@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% block title %}Browse Stories - GolpoKotha{% endblock %}
+
+{% block body %}
+<div class="page-header">
+  <h1>📖 Browse Stories</h1>
+  <p style="color: #999;">Discover stories from our community</p>
+</div>
+
+<!-- Search & Filter Section -->
+<div class="filter-section card">
+  <form method="GET" action="{{ url_for('main.posts') }}" class="filter-form">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label for="search">🔍 Search</label>
+        <input type="text" id="search" name="q" placeholder="Search stories..." value="{{ request.args.get('q', '') }}">
+      </div>
+      <div class="filter-group">
+        <label for="category">🏷️ Category</label>
+        <select id="category" name="category">
+          <option value="">All Categories</option>
+          <option value="Fiction" {% if request.args.get('category') == 'Fiction' %}selected{% endif %}>Fiction</option>
+          <option value="Non-Fiction" {% if request.args.get('category') == 'Non-Fiction' %}selected{% endif %}>Non-Fiction</option>
+          <option value="Poetry" {% if request.args.get('category') == 'Poetry' %}selected{% endif %}>Poetry</option>
+          <option value="Horror" {% if request.args.get('category') == 'Horror' %}selected{% endif %}>Horror</option>
+          <option value="Romance" {% if request.args.get('category') == 'Romance' %}selected{% endif %}>Romance</option>
+          <option value="Adventure" {% if request.args.get('category') == 'Adventure' %}selected{% endif %}>Adventure</option>
+          <option value="Mystery" {% if request.args.get('category') == 'Mystery' %}selected{% endif %}>Mystery</option>
+          <option value="Sci-Fi" {% if request.args.get('category') == 'Sci-Fi' %}selected{% endif %}>Sci-Fi</option>
+          <option value="Fantasy" {% if request.args.get('category') == 'Fantasy' %}selected{% endif %}>Fantasy</option>
+          <option value="Others" {% if request.args.get('category') == 'Others' %}selected{% endif %}>Others</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label for="sort">📊 Sort By</label>
+        <select id="sort" name="sort">
+          <option value="newest" {% if request.args.get('sort', 'newest') == 'newest' %}selected{% endif %}>Newest First</option>
+          <option value="oldest" {% if request.args.get('sort') == 'oldest' %}selected{% endif %}>Oldest First</option>
+          <option value="popular" {% if request.args.get('sort') == 'popular' %}selected{% endif %}>Most Liked</option>
+          <option value="views" {% if request.args.get('sort') == 'views' %}selected{% endif %}>Most Viewed</option>
+        </select>
+      </div>
+      <div class="filter-group filter-buttons">
+        <button type="submit" class="btn">Apply Filters</button>
+        <a href="{{ url_for('main.posts') }}" class="btn outline">Clear</a>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Results Info -->
+<div class="results-info">
+  <p>Showing <strong>{{ posts|length }}</strong> of <strong>{{ p.total }}</strong> stories</p>
+</div>
+
+<!-- Posts List -->
+{% if posts %}
+  {% for post in posts %}
+  <article class="card post-card">
+    <h3><a href="{{ url_for('main.post_detail', post_id=post.id) }}">{{ post.title }}</a></h3>
+    <div class="post-meta">
+      <span>By <a href="{{ url_for('main.profile', username=post.author.username) }}">{{ post.author. username }}</a></span>
+      <span>· {{ post.date_posted.strftime('%Y-%m-%d') }}</span>
+      <span>· 🏷️ <strong>{{ post.category }}</strong></span>
+      <span>· 👍 {{ post.likes or 0 }}</span>
+      <span>· 👁️ {{ post.views or 0 }}</span>
+    </div>
+    <p class="post-preview">{{ post.content | striptags | truncate(150) }}</p>
+    
+    <div class="post-actions">
+      {% if current_user.is_authenticated %}
+        <form action="{{ url_for('main.like_post', post_id=post.id) }}" method="POST">
+          <button type="submit" class="btn btn-action">👍 Like ({{ post.likes or 0 }})</button>
+        </form>
+      {% endif %}
+      <a href="{{ url_for('main.post_detail', post_id=post.id) }}" class="btn btn-action">Read</a>
+      {% if current_user.is_authenticated and current_user == post.author %}
+        <a href="{{ url_for('main.edit_post', post_id=post.id) }}" class="btn btn-action">Edit</a>
+      {% endif %}
+    </div>
+  </article>
+  {% endfor %}
+  
+  <!-- Pagination -->
+  {% if p and p.pages > 1 %}
+  <div class="pagination">
+    {% if p.has_prev %}
+      <a href="{{ request.path }}?page={{ p. prev_num }}&q={{ request.args.get('q', '') }}&category={{ request.args.get('category', '') }}&sort={{ request.args.get('sort', 'newest') }}" class="btn btn-sm">« Prev</a>
+    {% else %}
+      <span class="btn btn-sm disabled">Start</span>
+    {% endif %}
+    
+    {% for num in range(1, p.pages + 1) %}
+      {% if num == p.page %}
+        <span class="btn btn-sm active">{{ num }}</span>
+      {% else %}
+        <a href="{{ request.path }}?page={{ num }}&q={{ request.args.get('q', '') }}&category={{ request. args.get('category', '') }}&sort={{ request.args.get('sort', 'newest') }}" class="btn btn-sm">{{ num }}</a>
+      {% endif %}
+    {% endfor %}
+    
+    {% if p. has_next %}
+      <a href="{{ request.path }}?page={{ p.next_num }}&q={{ request.args.get('q', '') }}&category={{ request.args.get('category', '') }}&sort={{ request.args. get('sort', 'newest') }}" class="btn btn-sm">Next »</a>
+    {% else %}
+      <span class="btn btn-sm disabled">End</span>
+    {% endif %}
+  </div>
+  {% endif %}
+{% else %}
+  <div class="card">
+    <p>No stories found matching your criteria.</p>
+    <a href="{{ url_for('main.posts') }}" class="btn">Clear Filters</a>
+  </div>
+{% endif %}
+
+<style>
+  .page-header {
+    margin-bottom: 25px;
+  }
+  .page-header h1 {
+    margin: 0;
+    color: #fff;
+  }
+  
+  .filter-section {
+    margin-bottom: 25px;
+  }
+  . filter-form {
+    width: 100%;
+  }
+  .filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap:  15px;
+    align-items: flex-end;
+  }
+  .filter-group {
+    flex: 1;
+    min-width: 150px;
+  }
+  .filter-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #ccc;
+    font-size: 0.9em;
+  }
+  . filter-group input,
+  .filter-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #444;
+    border-radius: 6px;
+    background: #2a2a2a;
+    color: #fff;
+    font-size: 14px;
+  }
+  .filter-group input:focus,
+  .filter-group select:focus {
+    outline: none;
+    border-color: #4a9eff;
+  }
+  .filter-buttons {
+    display: flex;
+    gap: 10px;
+  }
+  .filter-buttons . btn {
+    padding: 10px 20px;
+  }
+  
+  .results-info {
+    margin-bottom: 15px;
+    color: #999;
+  }
+  
+  .post-card {
+    margin-bottom: 20px;
+  }
+  . post-card h3 a {
+    color: #a78bfa;
+    text-decoration:  none;
+  }
+  . post-card h3 a: hover {
+    text-decoration:  underline;
+  }
+  .post-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    color: #999;
+    font-size:  0.85em;
+    margin-bottom: 10px;
+  }
+  .post-meta a {
+    color: #4a9eff;
+    text-decoration: none;
+  }
+  .post-preview {
+    color: #ccc;
+    margin-bottom: 15px;
+  }
+  
+  .post-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+  .post-actions form {
+    margin: 0;
+    padding: 0;
+    display: inline-flex;
+  }
+  .btn-action {
+    padding: 10px 20px;
+    font-size: 14px;
+    border-radius: 6px;
+    min-width: 100px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    cursor: pointer;
+    background: #2d2d44;
+    border: 1px solid #444;
+    color: #fff;
+  }
+  .btn-action:hover {
+    background: #3d3d54;
+    border-color: #4a9eff;
+  }
+  
+  .pagination {
+    display: flex;
+    justify-content:  center;
+    align-items: center;
+    gap: 5px;
+    margin-top:  30px;
+  }
+  . btn-sm {
+    padding: 8px 15px;
+    font-size: 13px;
+    border-radius: 5px;
+    background: #2d2d44;
+    border: 1px solid #444;
+    color: #fff;
+    text-decoration: none;
+  }
+  .btn-sm:hover {
+    background: #3d3d54;
+  }
+  .btn-sm. active {
+    background: #4a9eff;
+    border-color: #4a9eff;
+  }
+  .btn-sm.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  @media (max-width: 768px) {
+    .filter-row {
+      flex-direction:  column;
+    }
+    . filter-group {
+      width: 100%;
+    }
+  }
+</style>
+{% endblock %}

@@ -1,74 +1,149 @@
 {% extends "base.html" %}
+{% block title %}Home - GolpoKotha{% endblock %}
+
 {% block body %}
-
-<div class="welcome-banner">
-  <img src="{{ url_for('static', filename='img/blog_welcome.jpg') }}"
-       alt="Welcome to GolpoKotha Blog!">
-  <p>
-    Welcome to <span>GolpoKotha</span> – Share your stories, read, and connect!
-  </p>
+<!-- Hero Section -->
+<div class="hero-section">
+  <img src="{{ url_for('static', filename='img/blog_welcome.jpg') }}" alt="GolpoKotha" class="hero-image">
+  <h2 class="hero-text">Welcome to GolpoKotha – Share your stories, read, and connect!</h2>
+  <p style="color: #999; margin-top: 10px;">A platform for storytellers and readers</p>
+  {% if not current_user.is_authenticated %}
+    <div style="margin-top: 20px;">
+      <a href="{{ url_for('main.register') }}" class="btn">Get Started</a>
+      <a href="{{ url_for('main.login') }}" class="btn outline" style="margin-left: 10px;">Login</a>
+    </div>
+  {% endif %}
 </div>
 
-<h2 class="section-title">Latest Blog Posts</h2>
-
-{% for post in posts %}
-<article class="card post-card">
-  <h3>
-    <a href="{{ url_for('main.post_detail', post_id=post.id) }}">
-      {{ post.title }}
-    </a>
-  </h3>
-
-  <div class="post-meta">
-    By <a href="{{ url_for('main.profile', username=post.author.username) }}">
-      {{ post.author.username }}
-    </a>
-    · {{ post.date_posted.strftime('%Y-%m-%d') }}
-    · 🏷️ Category: <strong>{{ post.category }}</strong>
-    · 👍 Likes: {{ post.likes }}
-    · 👁️ Views: {{ post.views }}
+<!-- Quick Stats -->
+<div class="stats-section">
+  <div class="stat-card">
+    <h3>📚</h3>
+    <p><strong>{{ total_posts }}</strong> Stories</p>
   </div>
-
-  <p>{{ post.content | truncate(220) }}</p>
-
-  <div class="post-actions">
-    <form action="{{ url_for('main.like_post', post_id=post.id) }}" method="post" style="display:inline;">
-      <button type="submit" class="btn outline">👍 Like ({{ post.likes }})</button>
-    </form>
-
-    <a class="btn outline" href="{{ url_for('main.post_detail', post_id=post.id) }}">Read</a>
-
-    {% if current_user.is_authenticated and current_user == post.author %}
-      <a class="btn muted" href="{{ url_for('main.edit_post', post_id=post.id) }}">Edit</a>
-    {% endif %}
+  <div class="stat-card">
+    <h3>👥</h3>
+    <p><strong>{{ total_users }}</strong> Writers</p>
   </div>
-</article>
-{% else %}
-<p>No posts found. Be the first to post!</p>
-{% endfor %}
+  <div class="stat-card">
+    <h3>🏷️</h3>
+    <p><strong>10</strong> Categories</p>
+  </div>
+</div>
 
-{% if p %}
-<div class="pagination">
-  {% if p.has_prev %}
-    <a href="{{ request.path }}?page={{ p.prev_num }}">&laquo; Prev</a>
-  {% else %}
-    <span>Start</span>
-  {% endif %}
+<!-- Recent/Trending Posts -->
+<div class="section-header">
+  <h2>🔥 Trending Stories</h2>
+  <a href="{{ url_for('main.posts') }}" class="btn outline btn-sm">View All →</a>
+</div>
 
-  {% for num in range(1, p.pages + 1) %}
-    {% if num == p.page %}
-      <span class="active">{{ num }}</span>
-    {% else %}
-      <a href="{{ request.path }}?page={{ num }}">{{ num }}</a>
-    {% endif %}
+{% if posts %}
+  {% for post in posts[: 5] %}
+  <article class="card post-card">
+    <h3><a href="{{ url_for('main.post_detail', post_id=post.id) }}">{{ post.title }}</a></h3>
+    <div class="post-meta">
+      <span>By <a href="{{ url_for('main.profile', username=post. author.username) }}">{{ post.author.username }}</a></span>
+      <span>· {{ post.date_posted.strftime('%Y-%m-%d') }}</span>
+      <span>· 🏷️ {{ post.category }}</span>
+      <span>· 👍 {{ post.likes or 0 }}</span>
+      <span>· 👁️ {{ post. views or 0 }}</span>
+    </div>
+    <p class="post-preview">{{ post.content | striptags | truncate(120) }}</p>
+    <a href="{{ url_for('main.post_detail', post_id=post.id) }}" class="btn btn-action">Read Story</a>
+  </article>
   {% endfor %}
-
-  {% if p.has_next %}
-    <a href="{{ request.path }}?page={{ p.next_num }}">Next &raquo;</a>
-  {% else %}
-    <span>End</span>
-  {% endif %}
-</div>
+{% else %}
+  <div class="card">
+    <p>No stories yet. Be the first to share! </p>
+  </div>
 {% endif %}
 
+<style>
+  .hero-section {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 20px;
+  }
+  .hero-image {
+    max-width: 350px;
+    width: 100%;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  }
+  .hero-text {
+    color:  #4a9eff;
+    font-size: 1.4em;
+    margin: 0;
+  }
+  
+  .stats-section {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+  }
+  .stat-card {
+    background: #1e1e2e;
+    padding: 20px 40px;
+    border-radius:  10px;
+    text-align: center;
+    border: 1px solid #333;
+  }
+  .stat-card h3 {
+    font-size: 2em;
+    margin:  0;
+  }
+  .stat-card p {
+    margin: 10px 0 0 0;
+    color: #ccc;
+  }
+  
+  . section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  . section-header h2 {
+    margin: 0;
+    color: #fff;
+  }
+  
+  .post-card {
+    margin-bottom: 20px;
+  }
+  . post-card h3 a {
+    color: #a78bfa;
+    text-decoration: none;
+  }
+  .post-card h3 a:hover {
+    text-decoration: underline;
+  }
+  .post-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap:  5px;
+    color:  #999;
+    font-size: 0.85em;
+    margin-bottom:  10px;
+  }
+  .post-meta a {
+    color: #4a9eff;
+    text-decoration:  none;
+  }
+  . post-preview {
+    color: #ccc;
+    margin-bottom: 15px;
+  }
+  . btn-action {
+    padding: 8px 20px;
+    font-size: 14px;
+  }
+  .btn-sm {
+    padding: 8px 15px;
+    font-size: 13px;
+  }
+</style>
 {% endblock %}
