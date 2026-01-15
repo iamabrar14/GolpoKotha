@@ -1,4 +1,4 @@
-from flask import render_template, url_for, flash, redirect, request, Blueprint, abort
+from flask import render_template, url_for, flash, redirect, request, Blueprint, abort, jsonify
 from flask_login import login_user, current_user, logout_user, login_required
 from . import db, bcrypt
 from .models import User, Post, Comment, Like, Notification
@@ -387,10 +387,10 @@ def api_continue_story():
     words = data.get('words', 150)
     
     if not content:
-        return {'success': False, 'error': 'No content provided'}, 400
+        return jsonify({'success': False, 'error': 'Content is required'}), 400
     
     result = continue_story(content, genre, words)
-    return result
+    return jsonify(result)
 
 @main.route('/api/ai/generate-starter', methods=['POST'])
 @login_required
@@ -402,7 +402,7 @@ def api_generate_starter():
     words = data.get('words', 200)
     
     result = generate_story_starter(genre, theme, words)
-    return result
+    return jsonify(result)
 
 @main.route('/api/ai/suggest-titles', methods=['POST'])
 @login_required
@@ -413,10 +413,10 @@ def api_suggest_titles():
     count = data.get('count', 5)
     
     if not content:
-        return {'success': False, 'error': 'No content provided'}, 400
+        return jsonify({'success': False, 'error': 'Content is required'}), 400
     
     result = suggest_titles(content, count)
-    return result
+    return jsonify(result)
 
 @main.route('/api/ai/improve-writing', methods=['POST'])
 @login_required
@@ -426,10 +426,10 @@ def api_improve_writing():
     text = data.get('text', '')
     
     if not text:
-        return {'success': False, 'error': 'No text provided'}, 400
+        return jsonify({'success': False, 'error': 'Text is required'}), 400
     
     result = improve_writing(text)
-    return result
+    return jsonify(result)
 
 @main.route('/api/ai/get-suggestions', methods=['POST'])
 @login_required
@@ -439,7 +439,7 @@ def api_get_suggestions():
     content = data.get('content', '')
     
     if not content:
-        return {'success': False, 'error': 'No content provided'}, 400
+        return jsonify({'success': False, 'error': 'Content is required'}), 400
     
     result = get_writing_suggestions(content)
-    return result
+    return jsonify(result)
