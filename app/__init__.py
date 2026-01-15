@@ -38,7 +38,7 @@ def create_app(config_class=Config):
     migrate.init_app(app, db)  # Add this line
 
     # Import models
-    from .models import User, Post, Comment
+    from .models import User, Post, Comment, Notification
 
     # Create tables - Remove this as migrations will handle it
     # with app.app_context():

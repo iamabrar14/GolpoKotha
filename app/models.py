@@ -25,6 +25,8 @@ class User(UserMixin, db.Model):
         backref=db.backref('followers', lazy='dynamic'),
         lazy='dynamic'
     )
+    
+    notifications = db.relationship('Notification', foreign_keys='Notification.user_id', backref='recipient', cascade='all, delete-orphan', passive_deletes=True)
 
     def set_password(self, password):
         self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
@@ -55,6 +57,25 @@ class User(UserMixin, db.Model):
         ).filter(
             followers.c.follower_id == self.id
         ).order_by(Post.date_posted.desc())
+    
+    def unread_notifications_count(self):
+        """Returns count of unread notifications for this user."""
+        return Notification.query.filter_by(user_id=self.id, is_read=False).count()
+    
+    def get_notifications(self, limit=None, unread_only=False):
+        """Returns user's notifications, optionally filtered and limited."""
+        query = Notification.query.filter_by(user_id=self.id)
+        if unread_only:
+            query = query.filter_by(is_read=False)
+        query = query.order_by(Notification.created_at.desc())
+        if limit:
+            query = query.limit(limit)
+        return query.all()
+    
+    def mark_notifications_read(self):
+        """Marks all notifications as read for this user."""
+        Notification.query.filter_by(user_id=self.id, is_read=False).update({'is_read': True})
+        db.session.commit()
 
 
 class Post(db.Model):
@@ -83,3 +104,29 @@ class Like(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id', ondelete='CASCADE'), nullable=False)
     __table_args__ = (db.UniqueConstraint('user_id', 'post_id', name='_user_post_like_uc'),)
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=True)
+    notification_type = db.Column(db.String(20), nullable=False)  # 'like', 'comment', 'follow', 'new_post'
+    message = db.Column(db.String(255), nullable=False)
+    link = db.Column(db.String(255), nullable=True)
+    is_read = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    
+    sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_notifications')
+    
+    @staticmethod
+    def create_notification(user_id, sender_id, notification_type, message, link=None):
+        """Create a new notification."""
+        notification = Notification(
+            user_id=user_id,
+            sender_id=sender_id,
+            notification_type=notification_type,
+            message=message,
+            link=link
+        )
+        db.session.add(notification)
+        db.session.commit()
+        return notification
