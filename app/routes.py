@@ -1,8 +1,9 @@
-from flask import render_template, url_for, flash, redirect, request, Blueprint, abort
+from flask import render_template, url_for, flash, redirect, request, Blueprint, abort, jsonify
 from flask_login import login_user, current_user, logout_user, login_required
 from . import db, bcrypt
 from .models import User, Post, Comment, Like, Notification
 from sqlalchemy import func
+from .ai_helper import continue_story, generate_story_starter, suggest_titles, improve_writing, get_writing_suggestions
 
 main = Blueprint('main', __name__)
 
@@ -367,3 +368,78 @@ def clear_all_notifications():
     db.session.commit()
     flash('All notifications cleared.', 'success')
     return redirect(url_for('main.notifications'))
+
+# ============== AI WRITING ASSISTANT ROUTES ==============
+
+@main.route('/ai-assistant')
+@login_required
+def ai_assistant():
+    """AI Writing Assistant page."""
+    return render_template('ai_assistant.html')
+
+@main.route('/api/ai/continue-story', methods=['POST'])
+@login_required
+def api_continue_story():
+    """API endpoint to continue a story."""
+    data = request.get_json()
+    content = data.get('content', '')
+    genre = data.get('genre', 'general')
+    words = data.get('words', 150)
+    
+    if not content:
+        return jsonify({'success': False, 'error': 'Content is required'}), 400
+    
+    result = continue_story(content, genre, words)
+    return jsonify(result)
+
+@main.route('/api/ai/generate-starter', methods=['POST'])
+@login_required
+def api_generate_starter():
+    """API endpoint to generate a story starter."""
+    data = request.get_json()
+    genre = data.get('genre', 'general')
+    theme = data.get('theme', '')
+    words = data.get('words', 200)
+    
+    result = generate_story_starter(genre, theme, words)
+    return jsonify(result)
+
+@main.route('/api/ai/suggest-titles', methods=['POST'])
+@login_required
+def api_suggest_titles():
+    """API endpoint to suggest titles."""
+    data = request.get_json()
+    content = data.get('content', '')
+    count = data.get('count', 5)
+    
+    if not content:
+        return jsonify({'success': False, 'error': 'Content is required'}), 400
+    
+    result = suggest_titles(content, count)
+    return jsonify(result)
+
+@main.route('/api/ai/improve-writing', methods=['POST'])
+@login_required
+def api_improve_writing():
+    """API endpoint to improve writing."""
+    data = request.get_json()
+    text = data.get('text', '')
+    
+    if not text:
+        return jsonify({'success': False, 'error': 'Text is required'}), 400
+    
+    result = improve_writing(text)
+    return jsonify(result)
+
+@main.route('/api/ai/get-suggestions', methods=['POST'])
+@login_required
+def api_get_suggestions():
+    """API endpoint to get writing suggestions."""
+    data = request.get_json()
+    content = data.get('content', '')
+    
+    if not content:
+        return jsonify({'success': False, 'error': 'Content is required'}), 400
+    
+    result = get_writing_suggestions(content)
+    return jsonify(result)

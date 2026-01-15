@@ -1,0 +1,486 @@
+{% extends "base.html" %}
+{% block body %}
+<style>
+  .ai-container {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    border-bottom: 2px solid rgba(255,255,255,.08);
+    overflow-x: auto;
+  }
+  
+  .tab {
+    padding: 12px 20px;
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-weight: 600;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s;
+    white-space: nowrap;
+  }
+  
+  .tab:hover {
+    color: var(--text);
+    background: rgba(255,255,255,.04);
+  }
+  
+  .tab.active {
+    color: var(--brand);
+    border-bottom-color: var(--brand);
+  }
+  
+  .tab-content {
+    display: none;
+  }
+  
+  .tab-content.active {
+    display: block;
+  }
+  
+  .ai-form {
+    background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  
+  .form-group {
+    margin-bottom: 18px;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  
+  select {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.12);
+    background: rgba(12, 18, 32, .7);
+    color: var(--text);
+    outline: none;
+  }
+  
+  select:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(99,102,241,.25);
+  }
+  
+  .result-area {
+    background: rgba(12, 18, 32, .7);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 12px;
+    padding: 18px;
+    min-height: 200px;
+    margin-bottom: 16px;
+    color: var(--text);
+    line-height: 1.8;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  
+  .result-area.empty {
+    color: var(--muted);
+    font-style: italic;
+  }
+  
+  .btn-group {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  
+  .loading-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .loading-overlay.active {
+    display: flex;
+  }
+  
+  .spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(99,102,241,.2);
+    border-top-color: var(--brand);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  .copy-btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,.15);
+    padding: 8px 16px;
+    border-radius: 10px;
+    color: var(--text);
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  
+  .copy-btn:hover {
+    background: rgba(255,255,255,.08);
+    border-color: var(--brand);
+  }
+  
+  .info-text {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 8px;
+  }
+  
+  @media (max-width: 768px) {
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+    
+    .tabs {
+      flex-wrap: wrap;
+    }
+  }
+</style>
+
+<div class="ai-container">
+  <h2>🤖 AI Writing Assistant</h2>
+  <p class="info-text">Powered by Google Gemini AI - Your creative writing companion</p>
+  
+  <div class="tabs">
+    <button class="tab active" data-tab="continue">Continue Story</button>
+    <button class="tab" data-tab="starter">Story Starter</button>
+    <button class="tab" data-tab="titles">Title Ideas</button>
+    <button class="tab" data-tab="improve">Improve Writing</button>
+    <button class="tab" data-tab="suggestions">Get Suggestions</button>
+  </div>
+  
+  <!-- Continue Story Tab -->
+  <div class="tab-content active" id="continue-tab">
+    <div class="ai-form">
+      <div class="form-group">
+        <label>Your Story So Far</label>
+        <textarea id="continue-content" rows="8" placeholder="Paste your story content here..."></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Genre</label>
+          <select id="continue-genre">
+            <option value="general">General</option>
+            <option value="romantic">Romantic</option>
+            <option value="thriller">Thriller</option>
+            <option value="horror">Horror</option>
+            <option value="comedy">Comedy</option>
+            <option value="fiction">Fiction</option>
+            <option value="sci-fi">Sci-Fi</option>
+            <option value="mystery">Mystery</option>
+            <option value="adventure">Adventure</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Word Count</label>
+          <select id="continue-words">
+            <option value="100">100 words</option>
+            <option value="150" selected>150 words</option>
+            <option value="200">200 words</option>
+            <option value="300">300 words</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn" onclick="continueStory()">✨ Continue Story</button>
+    </div>
+    <div id="continue-result" class="result-area empty">AI-generated continuation will appear here...</div>
+    <button class="copy-btn" onclick="copyToClipboard('continue-result')">📋 Copy to Clipboard</button>
+  </div>
+  
+  <!-- Story Starter Tab -->
+  <div class="tab-content" id="starter-tab">
+    <div class="ai-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Genre</label>
+          <select id="starter-genre">
+            <option value="general">General</option>
+            <option value="romantic">Romantic</option>
+            <option value="thriller">Thriller</option>
+            <option value="horror">Horror</option>
+            <option value="comedy">Comedy</option>
+            <option value="fiction">Fiction</option>
+            <option value="sci-fi">Sci-Fi</option>
+            <option value="mystery">Mystery</option>
+            <option value="adventure">Adventure</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Word Count</label>
+          <select id="starter-words">
+            <option value="150">150 words</option>
+            <option value="200" selected>200 words</option>
+            <option value="250">250 words</option>
+            <option value="300">300 words</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Theme/Setting (Optional)</label>
+        <input type="text" id="starter-theme" placeholder="e.g., A haunted mansion, Lost in space, Beach vacation...">
+      </div>
+      <button class="btn" onclick="generateStarter()">🎨 Generate Story Starter</button>
+    </div>
+    <div id="starter-result" class="result-area empty">AI-generated story opening will appear here...</div>
+    <button class="copy-btn" onclick="copyToClipboard('starter-result')">📋 Copy to Clipboard</button>
+  </div>
+  
+  <!-- Title Ideas Tab -->
+  <div class="tab-content" id="titles-tab">
+    <div class="ai-form">
+      <div class="form-group">
+        <label>Story Content</label>
+        <textarea id="titles-content" rows="8" placeholder="Paste your story content here..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Number of Titles</label>
+        <select id="titles-count">
+          <option value="3">3 titles</option>
+          <option value="5" selected>5 titles</option>
+          <option value="7">7 titles</option>
+          <option value="10">10 titles</option>
+        </select>
+      </div>
+      <button class="btn" onclick="suggestTitles()">💡 Suggest Titles</button>
+    </div>
+    <div id="titles-result" class="result-area empty">AI-generated title suggestions will appear here...</div>
+    <button class="copy-btn" onclick="copyToClipboard('titles-result')">📋 Copy to Clipboard</button>
+  </div>
+  
+  <!-- Improve Writing Tab -->
+  <div class="tab-content" id="improve-tab">
+    <div class="ai-form">
+      <div class="form-group">
+        <label>Your Text</label>
+        <textarea id="improve-text" rows="10" placeholder="Paste the text you want to improve..."></textarea>
+        <p class="info-text">AI will enhance grammar, vocabulary, and sentence structure while keeping your story intact.</p>
+      </div>
+      <button class="btn" onclick="improveWriting()">✍️ Improve Writing</button>
+    </div>
+    <div id="improve-result" class="result-area empty">Improved text will appear here...</div>
+    <button class="copy-btn" onclick="copyToClipboard('improve-result')">📋 Copy to Clipboard</button>
+  </div>
+  
+  <!-- Get Suggestions Tab -->
+  <div class="tab-content" id="suggestions-tab">
+    <div class="ai-form">
+      <div class="form-group">
+        <label>Your Story Content</label>
+        <textarea id="suggestions-content" rows="8" placeholder="Paste your story content here..."></textarea>
+        <p class="info-text">Get creative suggestions for plot developments, character depth, and scene ideas.</p>
+      </div>
+      <button class="btn" onclick="getSuggestions()">🎯 Get Suggestions</button>
+    </div>
+    <div id="suggestions-result" class="result-area empty">Writing suggestions will appear here...</div>
+    <button class="copy-btn" onclick="copyToClipboard('suggestions-result')">📋 Copy to Clipboard</button>
+  </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner"></div>
+</div>
+
+<script>
+  // Tab switching
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      const tabName = this.dataset.tab;
+      
+      // Remove active class from all tabs and contents
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      
+      // Add active class to clicked tab and corresponding content
+      this.classList.add('active');
+      document.getElementById(tabName + '-tab').classList.add('active');
+    });
+  });
+  
+  // Show/hide loading overlay
+  function showLoading() {
+    document.getElementById('loading-overlay').classList.add('active');
+  }
+  
+  function hideLoading() {
+    document.getElementById('loading-overlay').classList.remove('active');
+  }
+  
+  // Display result
+  function displayResult(elementId, content, isError = false) {
+    const element = document.getElementById(elementId);
+    element.classList.remove('empty');
+    element.textContent = content;
+    if (isError) {
+      element.style.color = 'var(--danger)';
+    } else {
+      element.style.color = 'var(--text)';
+    }
+  }
+  
+  // Copy to clipboard
+  function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId);
+    const text = element.textContent;
+    
+    if (text && !element.classList.contains('empty')) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Copied to clipboard!');
+      }).catch(err => {
+        console.error('Failed to copy:', err);
+      });
+    }
+  }
+  
+  // API call helper
+  async function apiCall(endpoint, data) {
+    showLoading();
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      const result = await response.json();
+      hideLoading();
+      
+      if (result.success) {
+        return { success: true, content: result.content };
+      } else {
+        return { success: false, error: result.error || 'An error occurred' };
+      }
+    } catch (error) {
+      hideLoading();
+      return { success: false, error: error.message };
+    }
+  }
+  
+  // Continue Story
+  async function continueStory() {
+    const content = document.getElementById('continue-content').value.trim();
+    const genre = document.getElementById('continue-genre').value;
+    const words = parseInt(document.getElementById('continue-words').value);
+    
+    if (!content) {
+      alert('Please enter your story content');
+      return;
+    }
+    
+    const result = await apiCall('/api/ai/continue-story', { content, genre, words });
+    
+    if (result.success) {
+      displayResult('continue-result', result.content);
+    } else {
+      displayResult('continue-result', 'Error: ' + result.error, true);
+    }
+  }
+  
+  // Generate Story Starter
+  async function generateStarter() {
+    const genre = document.getElementById('starter-genre').value;
+    const theme = document.getElementById('starter-theme').value.trim();
+    const words = parseInt(document.getElementById('starter-words').value);
+    
+    const result = await apiCall('/api/ai/generate-starter', { genre, theme, words });
+    
+    if (result.success) {
+      displayResult('starter-result', result.content);
+    } else {
+      displayResult('starter-result', 'Error: ' + result.error, true);
+    }
+  }
+  
+  // Suggest Titles
+  async function suggestTitles() {
+    const content = document.getElementById('titles-content').value.trim();
+    const count = parseInt(document.getElementById('titles-count').value);
+    
+    if (!content) {
+      alert('Please enter your story content');
+      return;
+    }
+    
+    const result = await apiCall('/api/ai/suggest-titles', { content, count });
+    
+    if (result.success) {
+      displayResult('titles-result', result.content);
+    } else {
+      displayResult('titles-result', 'Error: ' + result.error, true);
+    }
+  }
+  
+  // Improve Writing
+  async function improveWriting() {
+    const text = document.getElementById('improve-text').value.trim();
+    
+    if (!text) {
+      alert('Please enter text to improve');
+      return;
+    }
+    
+    const result = await apiCall('/api/ai/improve-writing', { text });
+    
+    if (result.success) {
+      displayResult('improve-result', result.content);
+    } else {
+      displayResult('improve-result', 'Error: ' + result.error, true);
+    }
+  }
+  
+  // Get Suggestions
+  async function getSuggestions() {
+    const content = document.getElementById('suggestions-content').value.trim();
+    
+    if (!content) {
+      alert('Please enter your story content');
+      return;
+    }
+    
+    const result = await apiCall('/api/ai/get-suggestions', { content });
+    
+    if (result.success) {
+      displayResult('suggestions-result', result.content);
+    } else {
+      displayResult('suggestions-result', 'Error: ' + result.error, true);
+    }
+  }
+</script>
+
+{% endblock %}
